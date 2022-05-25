@@ -23,18 +23,25 @@ namespace NetworkMonitor
 
     public partial class MainWindow : Window
     {
-        
+        MainViewModel MVM;
         public MainWindow()
         {
             InitializeComponent();
             this.Loaded += MainWindow_Loaded;
+            this.Closed += SaveOptions;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            MainViewModel MVM = new MainViewModel(this);
+            MVM = new MainViewModel(this);
             this.DataContext = MVM;
         }
+        
+        private void SaveOptions(object sender, EventArgs e)
+        {
+            MVM.SaveOptions();
+        }
 
+        
     }
 }

@@ -10,6 +10,8 @@ using System.Net.NetworkInformation;
 using System.Threading;
 using System.Runtime.InteropServices;
 
+
+
 namespace NetworkMonitor.Models
 {
     public class IpLAN
@@ -35,14 +37,18 @@ namespace NetworkMonitor.Models
         public static event NewIP eventIP;
         public static event ScanerDelegate eventClear;
         public static event ScanerDelegateProgress eventProgress;
+        internal static bool AliveScaner = false;
         static Mutex mutex1 = new Mutex();
         public static async void AsyncStartScaner()
         {
             await Task.Run(StartScaner);
         }
 
+        
         public static void StartScaner()
         {
+
+            AliveScaner = true;
             mutex1.WaitOne();
             eventClear?.Invoke();
             bool SuccesPing = false;
@@ -62,10 +68,16 @@ namespace NetworkMonitor.Models
                 {
                     foreach (GatewayIPAddressInformation address in addresses)
                     {
-                        GatewayIP = address.Address.ToString();
-                        eventIP?.Invoke(new IpLAN(address.Address.ToString(), "Основной шлюз", PingCheck.ARP(GatewayIP)));
+                        if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            GatewayIP = address.Address.ToString();
+                            eventIP?.Invoke(new IpLAN(address.Address.ToString(), "Основной шлюз", PingCheck.ARP(GatewayIP)));
+                            break;
+                        }
+                        
                     }
                 }
+                if (GatewayIP!="") break;
             }
 
             if (GatewayIP!="")
@@ -75,6 +87,7 @@ namespace NetworkMonitor.Models
                 
                 for (int i = 1; i <= 255; i++)
                 {
+                    if (!AliveScaner) return;
                     eventProgress?.Invoke(i);
                     string ipnum = IpSplit[0] + "." + IpSplit[1] + "." + IpSplit[2] + "." + i;
                     if (GatewayIP == ipnum) continue;
@@ -106,7 +119,7 @@ namespace NetworkMonitor.Models
         {
             Ping ping = new Ping();
             PingReply pingReply = null;
-            pingReply = ping.Send(ip);
+            pingReply = ping.Send(ip, 300);
             if (pingReply.Status == IPStatus.Success)
             {
                 succesPing = true;
@@ -132,8 +145,14 @@ namespace NetworkMonitor.Models
             byte[] macAddr = new byte[6];
             uint macAddrLen = (uint)macAddr.Length;
 
-            if (SendARP(BitConverter.ToInt32(dst.GetAddressBytes(), 0), 0, macAddr, ref macAddrLen) != 0)
-                throw new InvalidOperationException("SendARP failed.");
+            try
+            {
+                if (SendARP(BitConverter.ToInt32(dst.GetAddressBytes(), 0), 0, macAddr, ref macAddrLen) != 0)
+                    throw new InvalidOperationException("SendARP failed.");
+            }
+            catch
+            { }
+           
 
             string[] str = new string[(int)macAddrLen];
             for (int i = 0; i < macAddrLen; i++)

@@ -16,7 +16,6 @@ namespace NetworkMonitor.Models
     struct net_state
     {
         public bool inet_ok; // Флаг доступности сети
-        public bool http_ok; // Флаг теста http
         public Dictionary<String, int> avg_rtts; // Словарь пинга до хостов
         public double packet_loss; // Потеря пакетов
         public DateTime measure_time; // Дата, время
@@ -29,8 +28,7 @@ namespace NetworkMonitor.Models
         internal delegate void LogDelegate(StringBuilder message);
         internal static event LogDelegate LogEvent;
 
-        internal static String HTTP_TEST_HOST; // HTTP сервер, соединение до которого будем тестировать
-        internal static int HTTP_TEST_PORT; // Порт HTTP сервера
+        internal static String HOST; // HTTP сервер, соединение до которого будем тестировать
         internal static int TIMEOUT; // Таймаут подключения
         internal static int PING_COUNT; // Количество пакетов пинга
         internal static int PING_DELAY; // Ожидание перед отправкой следующего пакета пинга
@@ -55,14 +53,21 @@ namespace NetworkMonitor.Models
         public static void StartMonitor()
         {
             var config = JsonConvert.DeserializeObject<Dictionary<String, Object>>(File.ReadAllText(@"Settings\DefaultSettings.json"));
-
-            //HTTP_TEST_HOST = (String)config["http_test_host"];
-            //ROUTER_IP = (String)config["router_ip"];
-            //HTTP_TEST_PORT = int.Parse((String)config["http_test_port"]);
-            //TIMEOUT = int.Parse((String)config["timeout"]);
+            NetworkInterface[] adapters = NetworkInterface.GetAllNetworkInterfaces();
+            foreach (NetworkInterface adapter in adapters)
+            {
+                IPInterfaceProperties adapterProperties = adapter.GetIPProperties();
+                GatewayIPAddressInformationCollection addresses = adapterProperties.GatewayAddresses;
+                if (addresses.Count > 0)
+                {
+                    foreach (GatewayIPAddressInformation address in addresses)
+                    {
+                        ROUTER_IP = address.Address.ToString();
+                    }
+                }
+            }
             PING_COUNT = int.Parse((String)config["ping_count"]);
             PING_DELAY = int.Parse((String)config["ping_packet_delay"]);
-            //MEASURE_DELAY = int.Parse((String)config["measure_delay"]);
             MAX_PKT_LOSS = double.Parse((String)config["nq_max_loss"]);
             AliveMonitor = true;
 
@@ -77,12 +82,15 @@ namespace NetworkMonitor.Models
         {
             String rtts = "";
             int avg_rtt = 0;
-            avg_rtt = snapshot.avg_rtts[HTTP_TEST_HOST];
-            strLog.Append("Хост: " + HTTP_TEST_HOST + "; ");
-            strLog.Append("Дата: " + snapshot.measure_time.ToShortDateString() + "; ");
-            strLog.Append("Время: " + snapshot.measure_time.ToShortTimeString() + "; ");
+            try
+            {
+                avg_rtt = snapshot.avg_rtts[HOST];
+            }
+            catch
+            {
+            }
+            strLog.Append("Хост: " + HOST + "; ");
             strLog.Append("Доступ в интернет: " + snapshot.inet_ok.ToString() + "; ");
-            strLog.Append("Успешное подключение: " + snapshot.http_ok.ToString() + "; ");
             strLog.Append("Пинг: " + avg_rtt.ToString() + ";");
             strLog.Append("Пинг до роутера: " + snapshot.router_rtt.ToString() + "; ");
             strLog.Append("Потери: " + snapshot.packet_loss.ToString());
@@ -100,34 +108,18 @@ namespace NetworkMonitor.Models
             // Проверяем доступность роутера
             Ping ping = new Ping();
             var prr = ping.Send(ROUTER_IP, TIMEOUT);
-            // В CSV файле все поля должны быть заполнены. Если роутер не пингуется заполняем их параметром PING_TIMEOUT
             snapshot.router_rtt = prr.Status == IPStatus.Success ? (int)prr.RoundtripTime : TIMEOUT;
             if (prr.Status != IPStatus.Success)
             {
                 snapshot.avg_rtts = new Dictionary<string, int>();
-                snapshot.http_ok = false;
                 snapshot.inet_ok = false;
                 snapshot.packet_loss = 1;
                 Save_log(snapshot);
                 return;
             }
             snapshot.inet_ok = true;
-            // Проверяем доступность HTTP
-            try
-            {
-                snapshot.http_ok = true;
-                TcpClient tc = new TcpClient();
-                tc.BeginConnect(HTTP_TEST_HOST, HTTP_TEST_PORT, null, null);
-                Thread.Sleep(TIMEOUT);
-                // Если подключиться не удалось
-                if (!tc.Connected)
-                {
-                    snapshot.http_ok = false;
-                }
-                tc.Dispose();
-            }
-            catch { snapshot.http_ok = false; snapshot.inet_ok = false; }
-            //Теперь пингуем заданные хосты
+            
+            //Пингуем хост
             exited_threads = 0;
             pkt_sent = 0;
             success_pkts = 0;
@@ -136,15 +128,15 @@ namespace NetworkMonitor.Models
 
 
             Thread thread = new Thread(new ParameterizedThreadStart(PingTest));
-            thread.Start(HTTP_TEST_HOST);
+            thread.Start(HOST);
+          
 
             while (exited_threads < 1) continue;
             //Анализируем результаты пинга
             snapshot.avg_rtts = measure_results;
             snapshot.packet_loss = (double)(pkt_sent - success_pkts) / pkt_sent;
             snapshot.inet_ok = !(
-                snapshot.http_ok == false ||
-                ((double)total_time / success_pkts >= 0.75 * TIMEOUT) ||
+                 ((double)total_time / success_pkts >= 0.75 * TIMEOUT) ||
                 snapshot.packet_loss >= MAX_PKT_LOSS ||
                 snapshot.router_rtt == TIMEOUT);
             Save_log(snapshot);
@@ -163,7 +155,6 @@ namespace NetworkMonitor.Models
 
         }
 
-
         static void PingTest(Object arg)
         {
             String host = (String)arg;
@@ -171,6 +162,7 @@ namespace NetworkMonitor.Models
             int local_success = 0;
             long local_time = 0;
             Ping ping = new Ping();
+            
             // Запускаем пинг заданное количество раз.
             for (int i = 0; i < NetworkClass.PING_COUNT; i++)
             {

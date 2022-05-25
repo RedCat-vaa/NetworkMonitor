@@ -24,14 +24,31 @@
 
     </Window.Resources>
     <Grid Background="Cornsilk">
-        <TabControl>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="41*"/>
+            <ColumnDefinition Width="59*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="25"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Menu Height="25" Grid.ColumnSpan="2">
+            <MenuItem Header="О программе"></MenuItem>
+        </Menu>
+        <TabControl Grid.Row="1" Grid.ColumnSpan="2">
             <TabItem Header="Сканер">
                 <Grid Background="CadetBlue">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="24"/>
+                        <ColumnDefinition Width="136"/>
+                        <ColumnDefinition Width="160"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="70"/>
                         <RowDefinition/>
                     </Grid.RowDefinitions>
-                    <Button Template="{StaticResource ButtonTemplate}" Foreground="Black" Command="{Binding Path=ScanCommand}" HorizontalAlignment="Left">
+                    <Button Template="{StaticResource ButtonTemplate}" Foreground="Black" Command="{Binding Path=ScanCommand}" HorizontalAlignment="Left" Grid.ColumnSpan="2">
                         <Button.Content>
                             <StackPanel Orientation="Horizontal">
                                 <Image Source="Resources\start.png" Width="30"></Image>
@@ -39,19 +56,86 @@
                             </StackPanel>
                         </Button.Content>
                     </Button>
-                    <ListView x:Name="IpList" x:FieldModifier="public" Grid.Row="1" Margin="5,5,5,5">
+                    <Button Grid.Column="2" Template="{StaticResource ButtonTemplate}" Foreground="Black" Command="{Binding Path=ScanCommandStop}">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="Resources\stop.jpg" Width="30"></Image>
+                                <TextBlock VerticalAlignment="Center">Стоп</TextBlock>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+                    <ListView x:Name="IpList" x:FieldModifier="public" Grid.Row="1" Margin="5,5,5,5" Grid.ColumnSpan="4">
                         <ListView.View>
                             <GridView>
-                                <GridViewColumn Width="100" DisplayMemberBinding="{Binding Path=IP}">IP-адрес</GridViewColumn>
+                                <GridViewColumn Width="150" DisplayMemberBinding="{Binding Path=IP}">IP-адрес</GridViewColumn>
                                 <GridViewColumn DisplayMemberBinding="{Binding Path=Device}" Width="150">Устройство</GridViewColumn>
                                 <GridViewColumn Width="150" DisplayMemberBinding="{Binding Path=MAC}">MAC-адрес</GridViewColumn>
                             </GridView>
                         </ListView.View>
                     </ListView>
-                    <ProgressBar x:Name="ProgressScaner"  x:FieldModifier="public" HorizontalAlignment="Left" Height="25" Margin="180,25,0,0" VerticalAlignment="Top" Width="200" Maximum="255" Minimum="1" Value="1"/>
+                    <ProgressBar x:Name="ProgressScaner" Grid.Column="3" x:FieldModifier="public" HorizontalAlignment="Left" Height="25" Margin="15,25,0,0" VerticalAlignment="Top" Width="200" Maximum="255" Minimum="1" Value="1" />
                 </Grid>
             </TabItem>
-            <TabItem Header="Монитор">
+            <TabItem Header="Сниффер">
+                <Grid Background="CadetBlue">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="24"/>
+                        <ColumnDefinition Width="136"/>
+                        <ColumnDefinition Width="160"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="100"/>
+                        <RowDefinition Height="70"/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <Button Grid.Column="0" Template="{StaticResource ButtonTemplate}" Command="{Binding SnifferCommandStart}" Foreground="Black" Grid.ColumnSpan="2" Background="Black">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="Resources\start.png" Width="30"></Image>
+                                <TextBlock VerticalAlignment="Center">Старт</TextBlock>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+                    <Button Grid.Column="2" Template="{StaticResource ButtonTemplate}" Command="{Binding SnifferCommandStop}" Foreground="Black">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="Resources\stop.jpg" Width="30"></Image>
+                                <TextBlock VerticalAlignment="Center">Стоп</TextBlock>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+
+                    <ListView x:Name="DeviceList" x:FieldModifier="public" Grid.Row="0" Margin="5,5,5,5" Grid.Column="3">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="250" DisplayMemberBinding="{Binding Path=InfoDevice}">Устройство</GridViewColumn>
+                                <GridViewColumn Header="Выбрать">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding Path=IsChecked, Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"></CheckBox>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <ListView x:Name="SnifferList" x:FieldModifier="public" Grid.Row="1" Grid.RowSpan="2" Margin="5,5,5,5" Grid.Column="0" Grid.ColumnSpan="4">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="100" DisplayMemberBinding="{Binding Path=IpSource}">Ip-адрес (src)</GridViewColumn>
+                                <GridViewColumn Width="100" DisplayMemberBinding="{Binding Path=IpDest}">Ip-адрес (dst)</GridViewColumn>
+                                <GridViewColumn Width="100" DisplayMemberBinding="{Binding Path=PortSource}">Порт (src)</GridViewColumn>
+                                <GridViewColumn Width="100" DisplayMemberBinding="{Binding Path=PortDest}">Порт (dst)</GridViewColumn>
+                                <GridViewColumn Width="200" DisplayMemberBinding="{Binding Path=Data}">Данные</GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                </Grid>
+            </TabItem>
+            <TabItem Header="Пинг хоста">
                 <Grid Background="CadetBlue">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="24"/>
@@ -68,7 +152,7 @@
                         <Button.Content>
                             <StackPanel Orientation="Horizontal">
                                 <Image Source="Resources\start.png" Width="30"></Image>
-                                <TextBlock VerticalAlignment="Center">Мониторинг</TextBlock>
+                                <TextBlock VerticalAlignment="Center">Пинг</TextBlock>
                             </StackPanel>
                         </Button.Content>
                     </Button>
@@ -76,66 +160,45 @@
                         <Button.Content>
                             <StackPanel Orientation="Horizontal">
                                 <Image Source="Resources\stop.jpg" Width="30"></Image>
-                                <TextBlock VerticalAlignment="Center">Закончить</TextBlock>
+                                <TextBlock VerticalAlignment="Center">Стоп</TextBlock>
                             </StackPanel>
                         </Button.Content>
                     </Button>
+                    <StackPanel Grid.Column="3">
+                        <StackPanel Orientation="Horizontal">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Margin="5,5,5,5"><Run Text="Хост"/></TextBlock>
+                                <TextBox Grid.Column="1" x:Name="Host" Text="{Binding Path=Host, Mode=TwoWay}" Width="150" HorizontalAlignment="Left"/>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Margin="5,5,5,5"><Run Text="Таймаут (мс)"/></TextBlock>
+                                <TextBox Grid.Column="1" x:Name="Timeout" Width="150" Text="{Binding Path=Timeout, Mode=TwoWay}" HorizontalAlignment="Left"/>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Height="5"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Margin="5,5,5,5"><Run Text="Интервал (мс):"/></TextBlock>
+                            <TextBox Grid.Column="1" x:Name="Delay" Text="{Binding Path=Delay, Mode=TwoWay}" Width="150" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </StackPanel>
+
                     <TextBox x:FieldModifier="public" x:Name="LogMonitor" Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="4" Margin="5,5,5,5"/>
 
                 </Grid>
             </TabItem>
-            <TabItem Header="Настройки">
-                <StackPanel Background="CadetBlue">
-                    <StackPanel Height="5"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="125"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Margin="5,5,5,5"><Run Text="HTTP-хост"/></TextBlock>
-                        <TextBox Grid.Column="1" x:Name="Host" Text="{Binding Path=Host, Mode=TwoWay}" Width="300" HorizontalAlignment="Left"/>
-                    </Grid>
-                    <StackPanel Height="5"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="125"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Margin="5,5,5,5"><Run Text="HTTP-порт"/></TextBlock>
-                        <TextBox Grid.Column="1" x:Name="Port" Text="{Binding Path=Port, Mode=TwoWay}" Width="300" HorizontalAlignment="Left"/>
-                    </Grid>
-                    <StackPanel Height="5"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="125"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Margin="5,5,5,5"><Run Text="Таймаут (мс)"/></TextBlock>
-                        <TextBox Grid.Column="1" x:Name="Timeout" Width="300" Text="{Binding Path=Timeout, Mode=TwoWay}" HorizontalAlignment="Left"/>
-                    </Grid>
-                    <StackPanel Height="5"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="125"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Margin="5,5,5,5"><Run Text="IP роутера"/></TextBlock>
-                        <TextBox Grid.Column="1" x:Name="RouterIP" Width="300" Text="{Binding Path=RouterIP, Mode=TwoWay}"  HorizontalAlignment="Left"/>
-                    </Grid>
-                    <StackPanel Height="5"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="125"/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Margin="5,5,5,5"><Run Text="Время проверки (мс):"/></TextBlock>
-                        <TextBox Grid.Column="1" x:Name="Delay" Text="{Binding Path=Delay, Mode=TwoWay}" Width="300" HorizontalAlignment="Left"/>
-                    </Grid>
-                    <StackPanel Height="5"/>
-                </StackPanel>
-
-            </TabItem>
         </TabControl>
-        <ProgressBar HorizontalAlignment="Left" Height="31" Margin="421,-55,0,0" VerticalAlignment="Top" Width="0"/>
+        <ProgressBar HorizontalAlignment="Left" Height="31" Margin="93,-55,0,0" VerticalAlignment="Top" Width="0" Grid.Column="1"/>
     </Grid>
 </Window>
